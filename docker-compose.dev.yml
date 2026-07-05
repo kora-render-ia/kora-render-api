@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: kora-render-db-dev
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: kora_user
+      POSTGRES_PASSWORD: kora_password
+      POSTGRES_DB: kora_render
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U kora_user -d kora_render']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres_dev_data:

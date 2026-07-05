@@ -1,0 +1,82 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LicenseStatus {
+  ACTIVE
+  BLOCKED
+  EXPIRED
+  REFUNDED
+  CANCELED
+}
+
+model License {
+  id          Int           @id @default(autoincrement())
+  email       String        @db.VarChar(255)
+  name        String        @db.VarChar(255)
+  license_key String        @unique @db.VarChar(30)
+  status      LicenseStatus @default(ACTIVE)
+  plan        String        @db.VarChar(50)
+  expires_at  DateTime
+  max_devices Int           @default(2)
+  hotmart_id  String?       @db.VarChar(255)
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+
+  devices  Device[]
+  sessions Session[]
+
+  @@index([email])
+  @@index([license_key])
+  @@index([status])
+  @@index([hotmart_id])
+}
+
+model Device {
+  id               Int      @id @default(autoincrement())
+  license_id       Int
+  device_hash      String   @db.VarChar(255)
+  device_name      String   @db.VarChar(255)
+  operating_system String   @db.VarChar(100)
+  last_login       DateTime @default(now())
+  created_at       DateTime @default(now())
+
+  license License @relation(fields: [license_id], references: [id], onDelete: Cascade)
+
+  @@unique([license_id, device_hash])
+  @@index([license_id])
+  @@index([device_hash])
+}
+
+model Session {
+  id          Int      @id @default(autoincrement())
+  license_id  Int
+  token_jti   String   @unique @db.VarChar(255)
+  device_hash String   @db.VarChar(255)
+  is_valid    Boolean  @default(true)
+  expires_at  DateTime
+  created_at  DateTime @default(now())
+
+  license License @relation(fields: [license_id], references: [id], onDelete: Cascade)
+
+  @@index([token_jti])
+  @@index([license_id])
+}
+
+model WebhookLog {
+  id           Int      @id @default(autoincrement())
+  event        String   @db.VarChar(100)
+  payload      Json
+  status       String   @db.VarChar(20)
+  error        String?  @db.Text
+  processed_at DateTime @default(now())
+
+  @@index([event])
+  @@index([processed_at])
+}

@@ -1,0 +1,62 @@
+version: '3.9'
+
+services:
+  api:
+    build:
+      context: .
+      target: production
+    container_name: kora-render-api
+    ports:
+      - '${PORT:-3000}:3000'
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kora_user}:${POSTGRES_PASSWORD:-kora_password}@db:5432/${POSTGRES_DB:-kora_render}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-30d}
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+      HOTMART_WEBHOOK_SECRET: ${HOTMART_WEBHOOK_SECRET}
+      HOTMART_TOKEN: ${HOTMART_TOKEN}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - kora-network
+
+  db:
+    image: postgres:16-alpine
+    container_name: kora-render-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kora_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kora_password}
+      POSTGRES_DB: ${POSTGRES_DB:-kora_render}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-kora_user} -d ${POSTGRES_DB:-kora_render}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - kora-network
+
+  # Optional: pgAdmin for DB management
+  # pgadmin:
+  #   image: dpage/pgadmin4
+  #   ports:
+  #     - "5050:80"
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@korarender.com
+  #     PGADMIN_DEFAULT_PASSWORD: admin
+  #   networks:
+  #     - kora-network
+
+volumes:
+  postgres_data:
+
+networks:
+  kora-network:
+    driver: bridge
