@@ -25,7 +25,7 @@ app.use(helmet());
 // CORS — restrict in production
 app.use(
   cors({
-    origin: config.app.nodeEnv === 'production' ? ['https://korarender.com'] : '*',
+    origin: config.app.nodeEnv === 'production' ? ['https://korarender.com', 'https://admin.korarender.com.br'] : '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key', 'x-hotmart-signature'],
   })
