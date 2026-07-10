@@ -34,19 +34,16 @@ app.use(
 // Compression
 app.use(compression());
 
-// Raw body capture for webhook signature validation
-app.use((req: Request & { rawBody?: string }, res, next) => {
-  if (req.path.includes('/webhook')) {
-    let data = '';
-    req.on('data', (chunk) => { data += chunk; });
-    req.on('end', () => { req.rawBody = data; next(); });
-  } else {
-    next();
-  }
-});
-
-// Body parsing
-app.use(express.json({ limit: '1mb' }));
+// Body parsing — captura rawBody durante o próprio parse (necessário para
+// validar assinatura/hottok do webhook do Hotmart sem ler o stream 2x)
+app.use(
+  express.json({
+    limit: '1mb',
+    verify: (req: Request & { rawBody?: string }, _res, buf) => {
+      req.rawBody = buf.toString('utf8');
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Global rate limit
